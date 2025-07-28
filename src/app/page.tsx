@@ -342,7 +342,9 @@ export default function Home() {
                     <Input
                       type="file"
                       accept="image/*"
-                      ref={(el) => (examinationStampRefs.current[index] = el)}
+                      ref={(el) => {
+                        examinationStampRefs.current[index] = el;
+                      }}
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) {

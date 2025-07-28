@@ -49,7 +49,7 @@ export default function HealthCardPDF({
     const leftLabels = [
       "Nazwisko:",
       "Imię/Imiona:",
-      "Data urodz.:",
+      "Data urodzenia:",
       "PESEL:",
       "Numer rejestru:",
       "Organizacja sportowa:",
