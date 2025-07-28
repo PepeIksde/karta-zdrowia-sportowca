@@ -4,7 +4,7 @@ import HealthCardPDF from "@/components/health-card-pdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 interface ExaminationRecord {
   date: string;
@@ -26,7 +26,7 @@ export default function Home() {
     registrationNumber: "",
     clinicStamp: "",
     regon: "",
-    clinicStampImage: "", // base64 string
+    clinicStampImage: "",
     examinationStampImage: "",
   });
 
@@ -41,6 +41,9 @@ export default function Home() {
       examinationStampImage: "",
     },
   ]);
+
+  const clinicStampInputRef = useRef<HTMLInputElement | null>(null);
+  const examinationStampRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -84,6 +87,48 @@ export default function Home() {
 
   const removeExamination = (index: number) => {
     setExaminations((prev) => prev.filter((_, i) => i !== index));
+    examinationStampRefs.current.splice(index, 1); // usuń ref z listy
+  };
+
+  const clearForm = () => {
+    if (confirm("Czy na pewno chcesz wyczyścić cały formularz?")) {
+      setFormData({
+        name: "",
+        firstName: "",
+        birthDate: "",
+        pesel: "",
+        organization: "",
+        registrationNumber: "",
+        clinicStamp: "",
+        regon: "",
+        clinicStampImage: "",
+        examinationStampImage: "",
+      });
+
+      setExaminations([
+        {
+          date: "",
+          height: "",
+          weight: "",
+          result: "",
+          stamp: "",
+          nextDate: "",
+          examinationStampImage: "",
+        },
+      ]);
+
+      // Czyść inputy file
+      if (clinicStampInputRef.current) {
+        clinicStampInputRef.current.value = "";
+      }
+
+      examinationStampRefs.current.forEach((ref) => {
+        if (ref) ref.value = "";
+      });
+
+      // Reset refs do jednego pustego badania
+      examinationStampRefs.current = [null];
+    }
   };
 
   return (
@@ -210,6 +255,7 @@ export default function Home() {
             <Input
               type="file"
               accept="image/*"
+              ref={clinicStampInputRef}
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) {
@@ -225,9 +271,6 @@ export default function Home() {
               }}
               className="border-gray-200 focus:ring-2 focus:ring-blue-500"
             />
-          </div>
-          <div className="bg-white rounded-xl p-6 shadow-lg">
-            <HealthCardPDF formData={formData} examinations={examinations} />
           </div>
         </div>
 
@@ -299,6 +342,7 @@ export default function Home() {
                     <Input
                       type="file"
                       accept="image/*"
+                      ref={(el) => (examinationStampRefs.current[index] = el)}
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) {
@@ -350,6 +394,18 @@ export default function Home() {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* PDF + Clear Form Button */}
+      <div className="mt-12 space-y-4">
+        <HealthCardPDF formData={formData} examinations={examinations} />
+        <Button
+          variant="outline"
+          onClick={clearForm}
+          className="px-5 py-5 w-full border-red-500 text-red-600 hover:bg-red-50"
+        >
+          Wyczyść formularz
+        </Button>
       </div>
     </div>
   );
