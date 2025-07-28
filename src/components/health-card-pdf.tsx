@@ -25,6 +25,7 @@ interface HealthCardPDFProps {
     instructorRecommendations: string;
     clinicStamp: string;
     regon: string;
+    clinicStampImage: string; // base64 image string
   };
   examinations: ExaminationRecord[];
 }
@@ -63,52 +64,66 @@ export default function HealthCardPDF({
     ];
 
     let yLeft = 50;
-    const maxWidth = 170; // szerokość dla tekstów (20 do 190 mm)
-    const lineSpacing = 18; // odstęp między liniami
+    const maxWidth = 170;
+    const lineSpacing = 18;
 
     for (let i = 0; i < leftLabels.length; i++) {
       if (leftLabels[i] === "Organizacja sportowa:") {
-        // Zawijamy tekst "Organizacja sportowa" wraz z etykietą
         const orgText = `${leftLabels[i]} ${leftValues[i]}`;
         const orgLines = doc.splitTextToSize(orgText, maxWidth);
         doc.text(orgLines, 20, yLeft);
-        // Rysujemy linię pod ostatnią linijką tekstu z 5 mm odstępu od tekstu
         doc.line(
           20,
           yLeft + 5 + (orgLines.length - 1) * 7,
           190,
           yLeft + 5 + (orgLines.length - 1) * 7
         );
-        // Przesuwamy yLeft o wysokość wszystkich linii + odstęp
         yLeft += orgLines.length * 7 + 10;
       } else {
-        // Zwykły wiersz z tekstem i linią
         doc.text(`${leftLabels[i]} ${leftValues[i]}`, 20, yLeft);
         doc.line(20, yLeft + 5, 110, yLeft + 5);
         yLeft += lineSpacing;
       }
     }
 
-    // Prawa kolumna: pieczątka poradni i Nr REGON
+    // Prawa kolumna – pieczątka i REGON
     let yRight = 70;
+
+    if (formData.clinicStampImage) {
+      const imageType = formData.clinicStampImage.startsWith("data:image/jpeg")
+        ? "JPEG"
+        : "PNG";
+      doc.addImage(
+        formData.clinicStampImage,
+        imageType,
+        140,
+        yRight - 10,
+        50,
+        30
+      );
+      yRight += 30; // Zmniejszamy też przesunięcie, bo obrazek jest wyżej
+    }
+
+    // Niezależnie od obrazka – zawsze podpis „(pieczątka poradni)”
     doc.setFontSize(10);
     doc.text("(pieczatka poradni)", 140, yRight);
+    yRight += 10;
 
+    // Opcjonalny tekst pod pieczątką
     const clinicStampLines = doc.splitTextToSize(
       formData.clinicStamp || "",
       50
     );
-    yRight += 8;
     doc.setFontSize(11);
     doc.text(clinicStampLines, 140, yRight);
-
     yRight += clinicStampLines.length * 5;
+
+    // REGON
     doc.setFontSize(12);
     doc.text("Nr. REGON: " + formData.regon, 140, yRight);
     doc.line(140, yRight + 5, 190, yRight + 5);
 
-    // Sekcja "Uwagi instruktora"
-    // Ustawiamy y poniżej większej wartości między yLeft a yRight + odstęp 20
+    // Uwagi instruktora
     let y = Math.max(yLeft, yRight + 20);
     doc.setFontSize(12);
     doc.text("Uwagi instruktora:", 20, y);
@@ -124,19 +139,17 @@ export default function HealthCardPDF({
     }
 
     const lineHeight = 8;
-    // Rysujemy linie i tekst uwag
     for (let i = 0; i < maxNotesLines; i++) {
       const lineY = y + 10 + i * lineHeight;
-      doc.line(20, lineY, 190, lineY); // linia
+      doc.line(20, lineY, 190, lineY);
     }
     doc.setFontSize(10);
     displayedNotes.forEach((line: string, idx: number) => {
-      // tekst 2 mm nad linią
       const textY = y + 10 + idx * lineHeight - 2;
       doc.text(line, 22, textY);
     });
 
-    // Sekcja "Wskazówki dla instruktora"
+    // Wskazówki dla instruktora
     y += maxNotesLines * lineHeight + 25;
     doc.setFontSize(12);
     doc.text("Wskazówki dla instruktora:", 20, y);
@@ -153,7 +166,7 @@ export default function HealthCardPDF({
 
     for (let i = 0; i < maxRecLines; i++) {
       const lineY = y + 10 + i * lineHeight;
-      doc.line(20, lineY, 190, lineY); // linia
+      doc.line(20, lineY, 190, lineY);
     }
     doc.setFontSize(10);
     displayedRec.forEach((line: string, idx: number) => {
@@ -204,7 +217,7 @@ export default function HealthCardPDF({
   };
 
   return (
-    <Button onClick={generatePDF} className="mt-4  bg-amber-500">
+    <Button onClick={generatePDF} className="mt-4 bg-amber-500">
       Generuj PDF
     </Button>
   );

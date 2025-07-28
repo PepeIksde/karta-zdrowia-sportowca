@@ -28,6 +28,7 @@ export default function Home() {
     instructorRecommendations: "",
     clinicStamp: "",
     regon: "",
+    clinicStampImage: "", // base64 string
   });
 
   const [examinations, setExaminations] = useState<ExaminationRecord[]>([
@@ -239,7 +240,29 @@ export default function Home() {
               </div>
             </div>
           </div>
-
+          <div className="grid gap-2 bg-white rounded-xl p-6 shadow-lg">
+            <h2 className="text-2xl font-semibold mb-4 text-gray-800">
+              Zdjęcie pieczątki (png/jpg)
+            </h2>
+            <Input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  const reader = new FileReader();
+                  reader.onloadend = () => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      clinicStampImage: reader.result as string,
+                    }));
+                  };
+                  reader.readAsDataURL(file);
+                }
+              }}
+              className="border-gray-200 focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
           <div className="bg-white rounded-xl p-6 shadow-lg">
             <HealthCardPDF formData={formData} examinations={examinations} />
           </div>
