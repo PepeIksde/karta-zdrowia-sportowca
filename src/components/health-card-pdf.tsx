@@ -47,8 +47,8 @@ export default function HealthCardPDF({
 
     // Dane osobowe – lewa kolumna
     const leftLabels = [
-      "Nazwisko:",
       "Imię/Imiona:",
+      "Nazwisko:",
       "Data urodzenia:",
       "PESEL:",
       "Numer rejestru:",
