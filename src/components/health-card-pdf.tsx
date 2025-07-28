@@ -2,15 +2,15 @@
 
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { Button } from "./ui/button";
+import arialgeobold from "../../public/fonts/arial_geo";
 
 interface ExaminationRecord {
   date: string;
   height: string;
   weight: string;
   result: string;
-  stamp: string;
   nextDate: string;
+  examinationStampImage: string; // base64 image string
 }
 
 interface HealthCardPDFProps {
@@ -21,8 +21,6 @@ interface HealthCardPDFProps {
     pesel: string;
     organization: string;
     registrationNumber: string;
-    instructorNotes: string;
-    instructorRecommendations: string;
     clinicStamp: string;
     regon: string;
     clinicStampImage: string; // base64 image string
@@ -36,9 +34,11 @@ export default function HealthCardPDF({
 }: HealthCardPDFProps) {
   const generatePDF = () => {
     const doc = new jsPDF();
-    doc.setFont("helvetica");
 
-    // STRONA 1
+    doc.addFileToVFS("arial_geo-bold-italic.ttf", arialgeobold);
+    doc.addFont("arial_geo-bold-italic.ttf", "arialGeoBoldItalic", "normal");
+    doc.setFont("arialGeoBoldItalic");
+
     doc.setFontSize(20);
     doc.text("KARTA", 105, 25, { align: "center" });
     doc.text("ZDROWIA SPORTOWCA", 105, 35, { align: "center" });
@@ -48,7 +48,7 @@ export default function HealthCardPDF({
     // Dane osobowe – lewa kolumna
     const leftLabels = [
       "Nazwisko:",
-      "Imie/Imiona:",
+      "Imię/Imiona:",
       "Data urodz.:",
       "PESEL:",
       "Numer rejestru:",
@@ -59,8 +59,8 @@ export default function HealthCardPDF({
       formData.firstName,
       formData.birthDate,
       formData.pesel,
-      formData.organization,
       formData.registrationNumber,
+      formData.organization,
     ];
 
     let yLeft = 50;
@@ -101,15 +101,13 @@ export default function HealthCardPDF({
         50,
         30
       );
-      yRight += 30; // Zmniejszamy też przesunięcie, bo obrazek jest wyżej
+      yRight += 30;
     }
 
-    // Niezależnie od obrazka – zawsze podpis „(pieczątka poradni)”
     doc.setFontSize(10);
-    doc.text("(pieczatka poradni)", 140, yRight);
+    doc.text("(pieczątka poradni)", 140, yRight);
     yRight += 10;
 
-    // Opcjonalny tekst pod pieczątką
     const clinicStampLines = doc.splitTextToSize(
       formData.clinicStamp || "",
       50
@@ -118,66 +116,15 @@ export default function HealthCardPDF({
     doc.text(clinicStampLines, 140, yRight);
     yRight += clinicStampLines.length * 5;
 
-    // REGON
     doc.setFontSize(12);
     doc.text("Nr. REGON: " + formData.regon, 140, yRight);
     doc.line(140, yRight + 5, 190, yRight + 5);
 
-    // Uwagi instruktora
-    let y = Math.max(yLeft, yRight + 20);
-    doc.setFontSize(12);
-    doc.text("Uwagi instruktora:", 20, y);
+    // Tabela z badaniami
+    const tableStartY = Math.max(yLeft, yRight + 20);
 
-    const notesLines = doc.splitTextToSize(
-      formData.instructorNotes || "",
-      maxWidth
-    );
-    const maxNotesLines = 5;
-    const displayedNotes = notesLines.slice(0, maxNotesLines);
-    if (notesLines.length > maxNotesLines) {
-      displayedNotes[maxNotesLines - 1] += " ...";
-    }
-
-    const lineHeight = 8;
-    for (let i = 0; i < maxNotesLines; i++) {
-      const lineY = y + 10 + i * lineHeight;
-      doc.line(20, lineY, 190, lineY);
-    }
-    doc.setFontSize(10);
-    displayedNotes.forEach((line: string, idx: number) => {
-      const textY = y + 10 + idx * lineHeight - 2;
-      doc.text(line, 22, textY);
-    });
-
-    // Wskazówki dla instruktora
-    y += maxNotesLines * lineHeight + 25;
-    doc.setFontSize(12);
-    doc.text("Wskazówki dla instruktora:", 20, y);
-
-    const recLines = doc.splitTextToSize(
-      formData.instructorRecommendations || "",
-      maxWidth
-    );
-    const maxRecLines = 5;
-    const displayedRec = recLines.slice(0, maxRecLines);
-    if (recLines.length > maxRecLines) {
-      displayedRec[maxRecLines - 1] += " ...";
-    }
-
-    for (let i = 0; i < maxRecLines; i++) {
-      const lineY = y + 10 + i * lineHeight;
-      doc.line(20, lineY, 190, lineY);
-    }
-    doc.setFontSize(10);
-    displayedRec.forEach((line: string, idx: number) => {
-      const textY = y + 10 + idx * lineHeight - 2;
-      doc.text(line, 22, textY);
-    });
-
-    // STRONA 2 – tabela badań
-    doc.addPage();
     autoTable(doc, {
-      startY: 20,
+      startY: tableStartY,
       head: [
         [
           "Data",
@@ -193,7 +140,7 @@ export default function HealthCardPDF({
         exam.height,
         exam.weight,
         exam.result,
-        exam.stamp,
+        "",
         exam.nextDate,
       ]),
       styles: {
@@ -201,6 +148,9 @@ export default function HealthCardPDF({
         cellPadding: 6,
         halign: "center",
         valign: "middle",
+        font: "arial",
+        lineWidth: 0.5,
+        lineColor: [0, 0, 0],
       },
       headStyles: {
         fillColor: [255, 255, 255],
@@ -209,16 +159,57 @@ export default function HealthCardPDF({
         lineColor: [0, 0, 0],
         lineWidth: 0.5,
       },
-      tableLineColor: [0, 0, 0],
-      tableLineWidth: 0.5,
+      didDrawCell: (data) => {
+        const colIndex = data.column.index;
+        const rowIndex = data.row.index;
+        const cell = data.cell;
+
+        // Dodaj obrazek tylko w kolumnie "Pieczątka i podpis" (index 4)
+        if (colIndex === 4 && data.section === "body") {
+          const exam = examinations[rowIndex];
+          const image = exam.examinationStampImage;
+
+          if (image) {
+            try {
+              const imageType = image.startsWith("data:image/jpeg")
+                ? "JPEG"
+                : "PNG";
+
+              const imgWidth = 36;
+              const imgHeight = 16;
+
+              const x = cell.x + (cell.width - imgWidth) / 2;
+              const y = cell.y + (cell.height - imgHeight) / 2;
+
+              doc.addImage(image, imageType, x, y, imgWidth, imgHeight);
+            } catch (error) {
+              console.error("Błąd dodawania pieczątki do PDF:", error);
+            }
+          }
+        }
+
+        // Dodaj pionowe linie dla każdej komórki
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.5);
+        doc.line(cell.x, cell.y, cell.x, cell.y + cell.height); // lewa linia
+        doc.line(
+          cell.x + cell.width,
+          cell.y,
+          cell.x + cell.width,
+          cell.y + cell.height
+        ); // prawa linia
+      },
     });
 
     doc.save("karta-zdrowia-sportowca.pdf");
   };
 
   return (
-    <Button onClick={generatePDF} className="mt-4 bg-amber-500">
-      Generuj PDF
-    </Button>
+    <button
+      onClick={generatePDF}
+      className="px-5 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors w-full"
+    >
+      Pobierz PDF
+    </button>
   );
 }

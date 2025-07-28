@@ -4,7 +4,6 @@ import HealthCardPDF from "@/components/health-card-pdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 
 interface ExaminationRecord {
@@ -14,6 +13,7 @@ interface ExaminationRecord {
   result: string;
   stamp: string;
   nextDate: string;
+  examinationStampImage: string;
 }
 
 export default function Home() {
@@ -24,11 +24,10 @@ export default function Home() {
     pesel: "",
     organization: "",
     registrationNumber: "",
-    instructorNotes: "",
-    instructorRecommendations: "",
     clinicStamp: "",
     regon: "",
     clinicStampImage: "", // base64 string
+    examinationStampImage: "",
   });
 
   const [examinations, setExaminations] = useState<ExaminationRecord[]>([
@@ -39,6 +38,7 @@ export default function Home() {
       result: "",
       stamp: "",
       nextDate: "",
+      examinationStampImage: "",
     },
   ]);
 
@@ -77,6 +77,7 @@ export default function Home() {
         result: "",
         stamp: "",
         nextDate: "",
+        examinationStampImage: "",
       },
     ]);
   };
@@ -101,19 +102,6 @@ export default function Home() {
 
             <div className="grid gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="name" className="text-gray-700">
-                  Nazwisko
-                </Label>
-                <Input
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  className="border-gray-200 focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="grid gap-2">
                 <Label htmlFor="firstName" className="text-gray-700">
                   Imię/Imiona
                 </Label>
@@ -121,6 +109,19 @@ export default function Home() {
                   id="firstName"
                   name="firstName"
                   value={formData.firstName}
+                  onChange={handleInputChange}
+                  className="border-gray-200 focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="name" className="text-gray-700">
+                  Nazwisko
+                </Label>
+                <Input
+                  id="name"
+                  name="name"
+                  value={formData.name}
                   onChange={handleInputChange}
                   className="border-gray-200 focus:ring-2 focus:ring-blue-500"
                 />
@@ -202,44 +203,6 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-lg space-y-4">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-              Uwagi i zalecenia
-            </h2>
-
-            <div className="grid gap-4">
-              <div className="grid gap-2">
-                <Label
-                  htmlFor="instructorRecommendations"
-                  className="text-gray-700"
-                >
-                  Wskazówki dla instruktora
-                </Label>
-                <Textarea
-                  id="instructorRecommendations"
-                  name="instructorRecommendations"
-                  value={formData.instructorRecommendations}
-                  onChange={handleInputChange}
-                  rows={3}
-                  className="border-gray-200 focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="instructorNotes" className="text-gray-700">
-                  Uwagi instruktora
-                </Label>
-                <Textarea
-                  id="instructorNotes"
-                  name="instructorNotes"
-                  value={formData.instructorNotes}
-                  onChange={handleInputChange}
-                  rows={3}
-                  className="border-gray-200 focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-          </div>
           <div className="grid gap-2 bg-white rounded-xl p-6 shadow-lg">
             <h2 className="text-2xl font-semibold mb-4 text-gray-800">
               Zdjęcie pieczątki (png/jpg)
@@ -334,11 +297,25 @@ export default function Home() {
                   <div className="grid gap-2">
                     <Label className="text-gray-700">Pieczątka i podpis</Label>
                     <Input
-                      type="text"
-                      value={examination.stamp}
-                      onChange={(e) =>
-                        handleExaminationChange(index, "stamp", e.target.value)
-                      }
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setExaminations((prev) => {
+                              const updated = [...prev];
+                              updated[index] = {
+                                ...updated[index],
+                                examinationStampImage: reader.result as string,
+                              };
+                              return updated;
+                            });
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
                       className="border-gray-200 focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
