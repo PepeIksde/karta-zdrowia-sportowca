@@ -179,8 +179,8 @@ export default function HealthCardPDF({ cards }: HealthCardPDFProps) {
                 const imageType = image.startsWith("data:image/jpeg")
                   ? "JPEG"
                   : "PNG";
-                const imgWidth = 36.5;
-                const imgHeight = 12;
+                const imgWidth = 36;
+                const imgHeight = 11;
                 const x = cell.x + (cell.width - imgWidth) / 2;
                 const y = cell.y + (cell.height - imgHeight) / 2;
                 doc.addImage(image, imageType, x, y, imgWidth, imgHeight);
