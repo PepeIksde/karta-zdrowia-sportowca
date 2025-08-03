@@ -4,95 +4,38 @@ import HealthCardPDF from "@/components/health-card-pdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useRef, useState } from "react";
+import { useState } from "react";
 
 interface ExaminationRecord {
   date: string;
   height: string;
   weight: string;
   result: string;
-  stamp: string;
   nextDate: string;
   examinationStampImage: string;
 }
 
+interface AthleteCard {
+  formData: {
+    name: string;
+    firstName: string;
+    birthDate: string;
+    pesel: string;
+    organization: string;
+    registrationNumber: string;
+    clinicStamp: string;
+    regon: string;
+    clinicStampImage: string;
+  };
+  examinations: ExaminationRecord[];
+}
+
 export default function Home() {
-  const [formData, setFormData] = useState({
-    name: "",
-    firstName: "",
-    birthDate: "",
-    pesel: "",
-    organization: "",
-    registrationNumber: "",
-    clinicStamp: "",
-    regon: "",
-    clinicStampImage: "",
-    examinationStampImage: "",
-  });
+  const [athletes, setAthletes] = useState<AthleteCard[]>([getEmptyAthlete()]);
 
-  const [examinations, setExaminations] = useState<ExaminationRecord[]>([
-    {
-      date: "",
-      height: "",
-      weight: "",
-      result: "",
-      stamp: "",
-      nextDate: "",
-      examinationStampImage: "",
-    },
-  ]);
-
-  const clinicStampInputRef = useRef<HTMLInputElement | null>(null);
-  const examinationStampRefs = useRef<(HTMLInputElement | null)[]>([]);
-
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleExaminationChange = (
-    index: number,
-    field: keyof ExaminationRecord,
-    value: string
-  ) => {
-    setExaminations((prev) => {
-      const newExaminations = [...prev];
-      newExaminations[index] = {
-        ...newExaminations[index],
-        [field]: value,
-      };
-      return newExaminations;
-    });
-  };
-
-  const addExamination = () => {
-    setExaminations((prev) => [
-      ...prev,
-      {
-        date: "",
-        height: "",
-        weight: "",
-        result: "",
-        stamp: "",
-        nextDate: "",
-        examinationStampImage: "",
-      },
-    ]);
-  };
-
-  const removeExamination = (index: number) => {
-    setExaminations((prev) => prev.filter((_, i) => i !== index));
-    examinationStampRefs.current.splice(index, 1); // usuń ref z listy
-  };
-
-  const clearForm = () => {
-    if (confirm("Czy na pewno chcesz wyczyścić cały formularz?")) {
-      setFormData({
+  function getEmptyAthlete(): AthleteCard {
+    return {
+      formData: {
         name: "",
         firstName: "",
         birthDate: "",
@@ -102,313 +45,422 @@ export default function Home() {
         clinicStamp: "",
         regon: "",
         clinicStampImage: "",
-        examinationStampImage: "",
-      });
-
-      setExaminations([
+      },
+      examinations: [
         {
           date: "",
           height: "",
           weight: "",
           result: "",
-          stamp: "",
           nextDate: "",
           examinationStampImage: "",
         },
-      ]);
+      ],
+    };
+  }
 
-      // Czyść inputy file
-      if (clinicStampInputRef.current) {
-        clinicStampInputRef.current.value = "";
-      }
+  const addAthlete = () => {
+    setAthletes((prev) => [...prev, getEmptyAthlete()]);
+  };
 
-      examinationStampRefs.current.forEach((ref) => {
-        if (ref) ref.value = "";
-      });
-
-      // Reset refs do jednego pustego badania
-      examinationStampRefs.current = [null];
+  const removeAthlete = (index: number) => {
+    if (confirm("Czy na pewno chcesz usunąć tego sportowca?")) {
+      setAthletes((prev) => prev.filter((_, i) => i !== index));
     }
   };
 
+  const clearAthlete = (index: number) => {
+    if (confirm("Czy na pewno chcesz wyczyścić dane tego sportowca?")) {
+      setAthletes((prev) => {
+        const updated = [...prev];
+        updated[index] = getEmptyAthlete();
+        return updated;
+      });
+    }
+  };
+
+  const handleAthleteChange = (
+    athleteIndex: number,
+    field: keyof AthleteCard["formData"],
+    value: string
+  ) => {
+    const updated = [...athletes];
+    updated[athleteIndex].formData[field] = value;
+    setAthletes(updated);
+  };
+
+  const handleExaminationChange = (
+    athleteIndex: number,
+    examIndex: number,
+    field: keyof ExaminationRecord,
+    value: string
+  ) => {
+    const updated = [...athletes];
+    updated[athleteIndex].examinations[examIndex][field] = value;
+    setAthletes(updated);
+  };
+
+  const addExamination = (athleteIndex: number) => {
+    const updated = [...athletes];
+    updated[athleteIndex].examinations.push({
+      date: "",
+      height: "",
+      weight: "",
+      result: "",
+      nextDate: "",
+      examinationStampImage: "",
+    });
+    setAthletes(updated);
+  };
+
+  const removeExamination = (athleteIndex: number, examIndex: number) => {
+    const updated = [...athletes];
+    updated[athleteIndex].examinations = updated[
+      athleteIndex
+    ].examinations.filter((_, i) => i !== examIndex);
+    setAthletes(updated);
+  };
+
+  const handleClinicStampUpload = (athleteIndex: number, file: File) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const updated = [...athletes];
+      updated[athleteIndex].formData.clinicStampImage = reader.result as string;
+      setAthletes(updated);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleStampUpload = (
+    athleteIndex: number,
+    examIndex: number,
+    file: File
+  ) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const updated = [...athletes];
+      updated[athleteIndex].examinations[examIndex].examinationStampImage =
+        reader.result as string;
+      setAthletes(updated);
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
-    <div className="container mx-auto p-8 min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <main className="container mx-auto p-8 min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <h1 className="text-4xl font-bold mb-8 text-center">
         Karta Zdrowia Sportowca
       </h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Left column - Personal Data */}
-        <div className="space-y-6">
-          <div className="bg-white rounded-xl p-6 shadow-lg space-y-4">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-              Dane osobowe
-            </h2>
-
-            <div className="grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="firstName" className="text-gray-700">
-                  Imię/Imiona
-                </Label>
-                <Input
-                  id="firstName"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleInputChange}
-                  className="border-gray-200 focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="name" className="text-gray-700">
-                  Nazwisko
-                </Label>
-                <Input
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  className="border-gray-200 focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="birthDate" className="text-gray-700">
-                  Data urodzenia
-                </Label>
-                <Input
-                  id="birthDate"
-                  name="birthDate"
-                  type="date"
-                  value={formData.birthDate}
-                  onChange={handleInputChange}
-                  className="border-gray-200 focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="pesel" className="text-gray-700">
-                  PESEL
-                </Label>
-                <Input
-                  id="pesel"
-                  name="pesel"
-                  value={formData.pesel}
-                  onChange={handleInputChange}
-                  className="border-gray-200 focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-lg space-y-4">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-              Dane organizacyjne
-            </h2>
-
-            <div className="grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="organization" className="text-gray-700">
-                  Organizacja sportowa
-                </Label>
-                <Input
-                  id="organization"
-                  name="organization"
-                  value={formData.organization}
-                  onChange={handleInputChange}
-                  className="border-gray-200 focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="registrationNumber" className="text-gray-700">
-                  Numer rejestru
-                </Label>
-                <Input
-                  id="registrationNumber"
-                  name="registrationNumber"
-                  value={formData.registrationNumber}
-                  onChange={handleInputChange}
-                  className="border-gray-200 focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="regon" className="text-gray-700">
-                  Nr REGON
-                </Label>
-                <Input
-                  id="regon"
-                  name="regon"
-                  value={formData.regon}
-                  onChange={handleInputChange}
-                  className="border-gray-200 focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-2 bg-white rounded-xl p-6 shadow-lg">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-              Zdjęcie pieczątki (png/jpg)
-            </h2>
-            <Input
-              type="file"
-              accept="image/*"
-              ref={clinicStampInputRef}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  const reader = new FileReader();
-                  reader.onloadend = () => {
-                    setFormData((prev) => ({
-                      ...prev,
-                      clinicStampImage: reader.result as string,
-                    }));
-                  };
-                  reader.readAsDataURL(file);
-                }
-              }}
-              className="border-gray-200 focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-        </div>
-
-        {/* Right column - Examinations */}
-        <div className="bg-white rounded-xl p-6 shadow-lg">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-semibold text-gray-800">Badania</h2>
-            <Button
-              onClick={addExamination}
-              className="bg-green-600 hover:bg-green-700 text-white transition-colors"
-            >
-              Dodaj badanie
-            </Button>
-          </div>
-
-          <div className="space-y-6">
-            {examinations.map((examination, index) => (
-              <div
-                key={index}
-                className="bg-gray-50 rounded-lg p-6 border border-gray-100 shadow-sm transition-all hover:shadow-md"
-              >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {athletes.map((athlete, athleteIndex) => (
+        <div key={athleteIndex} className="space-y-12 mb-12">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="space-y-6">
+              <div className="bg-white rounded-xl p-6 shadow-lg space-y-4">
+                <h2 className="text-2xl font-semibold mb-4 text-gray-800">
+                  Dane osobowe
+                </h2>
+                <div className="grid gap-4">
                   <div className="grid gap-2">
-                    <Label className="text-gray-700">Data badania</Label>
-                    <Input
-                      type="date"
-                      value={examination.date}
-                      onChange={(e) =>
-                        handleExaminationChange(index, "date", e.target.value)
-                      }
-                      className="border-gray-200 focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label className="text-gray-700">Wzrost</Label>
-                    <Input
-                      type="text"
-                      value={examination.height}
-                      onChange={(e) =>
-                        handleExaminationChange(index, "height", e.target.value)
-                      }
-                      className="border-gray-200 focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label className="text-gray-700">Waga</Label>
-                    <Input
-                      type="text"
-                      value={examination.weight}
-                      onChange={(e) =>
-                        handleExaminationChange(index, "weight", e.target.value)
-                      }
-                      className="border-gray-200 focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label className="text-gray-700">Wynik badania</Label>
-                    <Input
-                      type="text"
-                      value={examination.result}
-                      onChange={(e) =>
-                        handleExaminationChange(index, "result", e.target.value)
-                      }
-                      className="border-gray-200 focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label className="text-gray-700">Pieczątka i podpis</Label>
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      ref={(el) => {
-                        examinationStampRefs.current[index] = el;
-                      }}
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const reader = new FileReader();
-                          reader.onloadend = () => {
-                            setExaminations((prev) => {
-                              const updated = [...prev];
-                              updated[index] = {
-                                ...updated[index],
-                                examinationStampImage: reader.result as string,
-                              };
-                              return updated;
-                            });
-                          };
-                          reader.readAsDataURL(file);
-                        }
-                      }}
-                      className="border-gray-200 focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label className="text-gray-700">
-                      Data następnego badania
+                    <Label htmlFor="firstName" className="text-gray-700">
+                      Imię/Imiona
                     </Label>
                     <Input
-                      type="date"
-                      value={examination.nextDate}
+                      value={athlete.formData.firstName}
                       onChange={(e) =>
-                        handleExaminationChange(
-                          index,
-                          "nextDate",
+                        handleAthleteChange(
+                          athleteIndex,
+                          "firstName",
                           e.target.value
                         )
                       }
                       className="border-gray-200 focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="name" className="text-gray-700">
+                      Nazwisko
+                    </Label>
+                    <Input
+                      className="border-gray-200 focus:ring-2 focus:ring-blue-500"
+                      value={athlete.formData.name}
+                      onChange={(e) =>
+                        handleAthleteChange(
+                          athleteIndex,
+                          "name",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="name" className="text-gray-700">
+                      Data urodzenia
+                    </Label>
+                    <Input
+                      className="border-gray-200 focus:ring-2 focus:ring-blue-500"
+                      type="date"
+                      value={athlete.formData.birthDate}
+                      onChange={(e) =>
+                        handleAthleteChange(
+                          athleteIndex,
+                          "birthDate",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="name" className="text-gray-700">
+                      PESEL
+                    </Label>
+                    <Input
+                      className="border-gray-200 focus:ring-2 focus:ring-blue-500"
+                      value={athlete.formData.pesel}
+                      onChange={(e) =>
+                        handleAthleteChange(
+                          athleteIndex,
+                          "pesel",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </div>
                 </div>
-                {examinations.length > 1 && (
-                  <Button
-                    variant="destructive"
-                    onClick={() => removeExamination(index)}
-                    className="mt-4 bg-red-500 hover:bg-red-600 transition-colors"
-                  >
-                    Usuń badanie
-                  </Button>
-                )}
               </div>
-            ))}
+              <div className="bg-white rounded-xl p-6 shadow-lg space-y-4">
+                <h2 className="text-2xl font-semibold mb-4 text-gray-800">
+                  Dane organizacyjne
+                </h2>
+                <div className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label className="text-gray-700">
+                      Organizacja sportowa
+                    </Label>
+                    <Input
+                      className="border-gray-200 focus:ring-2 focus:ring-blue-500"
+                      value={athlete.formData.organization}
+                      onChange={(e) =>
+                        handleAthleteChange(
+                          athleteIndex,
+                          "organization",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label className="text-gray-700">Numer rejestru</Label>
+                    <Input
+                      className="border-gray-200 focus:ring-2 focus:ring-blue-500"
+                      value={athlete.formData.registrationNumber}
+                      onChange={(e) =>
+                        handleAthleteChange(
+                          athleteIndex,
+                          "registrationNumber",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label className="text-gray-700">REGON</Label>
+                    <Input
+                      className="border-gray-200 focus:ring-2 focus:ring-blue-500"
+                      value={athlete.formData.regon}
+                      onChange={(e) =>
+                        handleAthleteChange(
+                          athleteIndex,
+                          "regon",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="grid gap-2 bg-white rounded-xl p-6 shadow-lg">
+                <h2 className="text-2xl font-semibold mb-4 text-gray-800">
+                  Zdjęcie pieczątki (png/jpg)
+                </h2>
+                <Input
+                  className="border-gray-200 focus:ring-2 focus:ring-blue-500"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) =>
+                    e.target.files &&
+                    handleClinicStampUpload(athleteIndex, e.target.files[0])
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl p-6 shadow-lg ">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-semibold text-gray-800">
+                  Badania
+                </h2>
+                {/* <Button
+                  onClick={() => addExamination(athleteIndex)}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  Dodaj badanie
+                </Button> */}
+              </div>
+              <div className="space-y-6">
+                {athlete.examinations.map((exam, examIndex) => (
+                  <div
+                    key={examIndex}
+                    className="bg-gray-50 rounded-lg p-6 border border-gray-100 shadow-sm"
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-gray-700 pb-2">
+                          Data badania
+                        </Label>
+                        <Input
+                          className="border-gray-200 focus:ring-2 focus:ring-blue-500"
+                          type="date"
+                          value={exam.date}
+                          onChange={(e) =>
+                            handleExaminationChange(
+                              athleteIndex,
+                              examIndex,
+                              "date",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-gray-700 pb-2">Wzrost</Label>
+                        <Input
+                          className="border-gray-200 focus:ring-2 focus:ring-blue-500"
+                          value={exam.height}
+                          onChange={(e) =>
+                            handleExaminationChange(
+                              athleteIndex,
+                              examIndex,
+                              "height",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-gray-700 pb-2">Waga</Label>
+                        <Input
+                          className="border-gray-200 focus:ring-2 focus:ring-blue-500"
+                          value={exam.weight}
+                          onChange={(e) =>
+                            handleExaminationChange(
+                              athleteIndex,
+                              examIndex,
+                              "weight",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-gray-700 pb-2">
+                          Wynik badania
+                        </Label>
+                        <Input
+                          className="border-gray-200 focus:ring-2 focus:ring-blue-500"
+                          value={exam.result}
+                          onChange={(e) =>
+                            handleExaminationChange(
+                              athleteIndex,
+                              examIndex,
+                              "result",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-gray-700 pb-2">
+                          Data następnego badania
+                        </Label>
+                        <Input
+                          className="border-gray-200 focus:ring-2 focus:ring-blue-500"
+                          type="date"
+                          value={exam.nextDate}
+                          onChange={(e) =>
+                            handleExaminationChange(
+                              athleteIndex,
+                              examIndex,
+                              "nextDate",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-gray-700 pb-2">
+                          Pieczątka i podpis
+                        </Label>
+                        <Input
+                          className="border-gray-200 focus:ring-2 focus:ring-blue-500"
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) =>
+                            e.target.files &&
+                            handleStampUpload(
+                              athleteIndex,
+                              examIndex,
+                              e.target.files[0]
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+                    {athlete.examinations.length > 1 && (
+                      <Button
+                        variant="destructive"
+                        onClick={() =>
+                          removeExamination(athleteIndex, examIndex)
+                        }
+                        className="mt-4 bg-red-500 hover:bg-red-600"
+                      >
+                        Usuń badanie
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-row justify-between gap-4">
+            <Button
+              variant="outline"
+              onClick={() => clearAthlete(athleteIndex)}
+              className="w-full border-red-500 text-red-600 hover:bg-red-50 mb-4"
+            >
+              Wyczyść dane sportowca
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => removeAthlete(athleteIndex)}
+              className="w-full border-red-500 text-red-600 hover:bg-red-50"
+            >
+              Usuń sportowca
+            </Button>
           </div>
         </div>
-      </div>
+      ))}
 
-      {/* PDF + Clear Form Button */}
       <div className="mt-12 space-y-4">
-        <HealthCardPDF formData={formData} examinations={examinations} />
         <Button
-          variant="outline"
-          onClick={clearForm}
-          className="px-5 py-5 w-full border-red-500 text-red-600 hover:bg-red-50"
+          onClick={addAthlete}
+          className="px-5 py-6 w-full bg-green-600 hover:bg-green-700 text-white"
         >
-          Wyczyść formularz
+          Dodaj sportowca
         </Button>
+        <HealthCardPDF cards={athletes} />
       </div>
-    </div>
+    </main>
   );
 }
