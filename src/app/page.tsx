@@ -24,7 +24,6 @@ interface AthleteCard {
     organization: string;
     registrationNumber: string;
     clinicStamp: string;
-    regon: string;
     clinicStampImage: string;
   };
   examinations: ExaminationRecord[];
@@ -43,7 +42,6 @@ export default function Home() {
         organization: "",
         registrationNumber: "",
         clinicStamp: "",
-        regon: "",
         clinicStampImage: "",
       },
       examinations: [
@@ -258,20 +256,6 @@ export default function Home() {
                         handleAthleteChange(
                           athleteIndex,
                           "registrationNumber",
-                          e.target.value
-                        )
-                      }
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label className="text-gray-700">REGON</Label>
-                    <Input
-                      className="border-gray-200 focus:ring-2 focus:ring-blue-500"
-                      value={athlete.formData.regon}
-                      onChange={(e) =>
-                        handleAthleteChange(
-                          athleteIndex,
-                          "regon",
                           e.target.value
                         )
                       }

@@ -113,20 +113,16 @@ export default function HealthCardPDF({ cards }: HealthCardPDFProps) {
       }
 
       doc.setFontSize(8);
-      doc.text("(pieczątka poradni)", 140, yRight);
+      doc.text("(pieczątka poradni)", 150, yRight + 10);
       yRight += 8;
 
       const clinicStampLines = doc.splitTextToSize(
         formData.clinicStamp || "",
-        50
+        100
       );
       doc.setFontSize(10);
       doc.text(clinicStampLines, 140, yRight);
       yRight += clinicStampLines.length * 5;
-
-      doc.setFontSize(10);
-      doc.text("Nr. REGON: " + formData.regon, 140, yRight);
-      doc.line(140, yRight + 4, 190, yRight + 4);
 
       const tableStartY = Math.max(yLeft, yRight + 15);
 
