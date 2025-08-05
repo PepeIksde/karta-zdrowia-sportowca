@@ -22,7 +22,6 @@ interface HealthCardData {
     organization: string;
     registrationNumber: string;
     clinicStamp: string;
-    regon: string;
     clinicStampImage: string;
   };
   examinations: ExaminationRecord[];
